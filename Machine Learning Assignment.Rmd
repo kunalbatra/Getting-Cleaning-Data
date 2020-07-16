@@ -1,0 +1,96 @@
+---
+title: "Machine Learning Assignment"
+output: html_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo=FALSE, message = FALSE)
+library(caret)
+library(e1071)
+library(randomForest)
+library(rpart.plot)
+```
+
+```{r}
+#Load the raw datasets into R session
+
+pml_data <- read.csv("C://Users//ssakub//Desktop//Reference_material//R//Data-Science-Specialisation-using-R//Assignments//Machine Learning//pml-training.csv", header=TRUE)
+pml_test_data <- read.csv("C://Users//ssakub//Desktop//Reference_material//R//Data-Science-Specialisation-using-R//Assignments//Machine Learning//pml-testing.csv", header=TRUE)
+```
+
+**Data Cleaning**
+
+```{r}
+
+#Remove variables which have near zero variance due to non-unique values
+
+zero_var <- nearZeroVar(pml_data)
+
+pml_data_nonzero_var <-pml_data[,-zero_var] 
+
+#As most of the variables have a lot of NA's, we will remove the variables where 95% data is missing
+
+na_var <- sapply(pml_data_nonzero_var, function(x) mean(is.na(x))) > .95
+training_clean <- pml_data_nonzero_var[, na_var ==FALSE]
+dim(training_clean) # Reduced dimension after removing NA variables
+
+# Create training and Validation datasets from clean PML training data
+
+set.seed(12345)
+partition <- createDataPartition(training_clean$classe, p=.75, list=FALSE)
+pml_training_data <- training_clean[partition,]
+pml_validation_data <- training_clean[-partition,]
+```
+
+**DECISION TREE**
+
+```{r}
+
+ctrl <- trainControl(method="repeatedcv", number=10, repeats=3)
+
+model_dt <- train(classe~.,data=pml_training_data, method="rpart", trControl=ctrl)
+
+rpart.plot(model_dt$finalModel, roundint = FALSE)
+
+#Validate the model for Out of sample Error rate
+
+model_validate_dt <- predict(model_dt, newdata = pml_validation_data)
+
+
+#Confusion Matrix to calculate the out of sample error rate for validation sample based on the model
+
+confusionMatrix(model_validate_dt, as.factor(pml_validation_data$classe))
+```
+
+**Outcome**: As the accuracy is approx. 66%, we will repeat the same process using a Random Forest Algorithm to see if this improves the prediction accuracy and reduces the Out of Sample Error Rate
+
+**RANDOM FOREST**
+
+```{r}
+
+ctrl <- trainControl(method="repeatedcv", number=10, repeats=3)
+
+model_rf <- train(classe~.,data=pml_training_data, method="rf", trControl=ctrl, ntree=20)
+
+plot(model_rf$finalModel)
+
+#Validate the model for Out of sample Error rate
+
+model_validate_rf <- predict(model_rf, newdata = pml_validation_data)
+
+
+#Confusion Matrix to calculate the out of sample error rate for validation sample based on the model
+
+confusionMatrix(model_validate_rf, as.factor(pml_validation_data$classe))
+```
+**OUTCOME**: As reflected in the Confusion Matrix output, the accuracy has jumped to 100% using Random Forest with 20 trees on Validation sample to test the Out of Sample Error Rate
+
+**PREDICTION ON TEST SAMPLE**
+```{r}
+#Use Random Forest Model to predict the class on Test dataset
+
+test_outcome <- predict(model_rf, newdata=pml_test_data)
+test_outcome
+```
+
+
