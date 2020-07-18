@@ -1,0 +1,12 @@
+name: RShiny_app
+title: RShiny_app
+username:
+account: kunalbatra
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2581804
+bundleId: 3406230
+url: https://kunalbatra.shinyapps.io/RShiny_app/
+when: 1595050131.22769
+asMultiple: FALSE
+asStatic: FALSE
